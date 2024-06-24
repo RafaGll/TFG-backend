@@ -1,10 +1,23 @@
 const mongoose = require('mongoose');
 
-const TutorialSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  level: { type: String, enum: ['basic', 'intermediate', 'advanced'], required: true },
-  createdAt: { type: Date, default: Date.now }
+const tutorialSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: true,
+  },
+  order: {
+    type: Number,
+    default: 0,
+  },
 });
 
-module.exports = mongoose.model('Tutorial', TutorialSchema);
+module.exports = mongoose.model('Tutorial', tutorialSchema);
