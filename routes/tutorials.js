@@ -16,14 +16,21 @@ router.get("/", async (req, res) => {
 
 // Crear un nuevo tutorial (Solo administradores)
 router.post("/", auth, admin, async (req, res) => {
-  const tutorial = new Tutorial({
-    title: req.body.title,
-    content: req.body.content,
-    category: req.body.category,
-    order: req.body.order,
-  });
-
   try {
+    // Obtener el mayor número de orden dentro de la categoría
+    const maxOrderTutorial = await Tutorial.findOne({ category: req.body.category })
+      .sort('-order')
+      .exec();
+
+    const newOrder = maxOrderTutorial ? maxOrderTutorial.order + 1 : 1;
+
+    const tutorial = new Tutorial({
+      title: req.body.title,
+      content: req.body.content,
+      category: req.body.category,
+      order: newOrder,
+    });
+
     const newTutorial = await tutorial.save();
     res.status(201).json(newTutorial);
   } catch (err) {
@@ -38,17 +45,51 @@ router.get("/:id", getTutorial, (req, res) => {
 
 // Actualizar un tutorial (Solo administradores)
 router.patch("/:id", auth, admin, getTutorial, async (req, res) => {
-  if (req.body.title != null) {
-    res.tutorial.title = req.body.title;
+  const { title, content, category, order } = req.body;
+  const currentCategory = res.tutorial.category;
+  const currentOrder = res.tutorial.order;
+
+  if (title != null) {
+    res.tutorial.title = title;
   }
-  if (req.body.content != null) {
-    res.tutorial.content = req.body.content;
+  if (content != null) {
+    res.tutorial.content = content;
   }
-  if (req.body.category != null) {
-    res.tutorial.category = req.body.category;
+  if (category != null) {
+    res.tutorial.category = category;
   }
-  if (req.body.order != null) {
-    res.tutorial.order = req.body.order;
+  if (order != null) {
+    if (category != null && category.toString() !== currentCategory.toString()) {
+      // Cambiar de categoría
+      const maxOrderInNewCategory = await Tutorial.findOne({ category })
+        .sort('-order')
+        .exec();
+      const newOrder = maxOrderInNewCategory ? maxOrderInNewCategory.order + 1 : 1;
+
+      res.tutorial.order = newOrder;
+
+      // Actualizar el orden en la categoría antigua
+      await Tutorial.updateMany(
+        { category: currentCategory, order: { $gt: currentOrder } },
+        { $inc: { order: -1 } }
+      );
+    } else if (category == null || category.toString() === currentCategory.toString()) {
+      // Misma categoría
+      if (order !== currentOrder) {
+        if (order > currentOrder) {
+          await Tutorial.updateMany(
+            { category: currentCategory, order: { $gt: currentOrder, $lte: order } },
+            { $inc: { order: -1 } }
+          );
+        } else {
+          await Tutorial.updateMany(
+            { category: currentCategory, order: { $lt: currentOrder, $gte: order } },
+            { $inc: { order: 1 } }
+          );
+        }
+        res.tutorial.order = order;
+      }
+    }
   }
 
   try {
@@ -62,13 +103,24 @@ router.patch("/:id", auth, admin, getTutorial, async (req, res) => {
 // Eliminar un tutorial (Solo administradores)
 router.delete("/:id", auth, admin, getTutorial, async (req, res) => {
   try {
+    const categoryId = res.tutorial.category;
+    const currentOrder = res.tutorial.order;
+
     await res.tutorial.remove();
+
+    // Actualizar el orden de los tutoriales restantes en la misma categoría
+    await Tutorial.updateMany(
+      { category: categoryId, order: { $gt: currentOrder } },
+      { $inc: { order: -1 } }
+    );
+
     res.json({ message: "Deleted Tutorial" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+// Middleware para obtener un tutorial por ID
 async function getTutorial(req, res, next) {
   let tutorial;
   try {
