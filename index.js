@@ -11,7 +11,18 @@ const port = process.env.PORT || 3000;
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// Configuración básica de CORS (permite todas las solicitudes desde cualquier origen)
 app.use(cors());
+
+// O puedes usar una configuración más avanzada de CORS
+// const corsOptions = {
+//   origin: 'https://tu-dominio-permitido.com', // Cambia esto por tu dominio permitido
+//   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+//   credentials: true,
+//   optionsSuccessStatus: 204
+// };
+// app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // Asegúrate de que la carpeta 'uploads' esté disponible para servir archivos estáticos
@@ -42,3 +53,13 @@ mongoose
   .catch((err) => {
     console.error("Database connection error:", err);
   });
+
+// Manejo de errores global
+app.use((err, req, res, next) => {
+  if (err.name === 'UnauthorizedError') {
+    // Enviar una respuesta específica si el token es inválido
+    res.status(401).json({ message: 'Token inválido' });
+  } else {
+    next(err);
+  }
+});
