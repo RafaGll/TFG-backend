@@ -84,7 +84,7 @@ router.get("/next/:categoryId", auth, async (req, res) => {
     // }
 
     // Si todos los ejercicios están completados, devolver un mensaje de error
-    res.status(404).json({ message: "No more exercises in this category." });
+    res.status(404).json({ message: "No hay ejercicios." });
   } catch (err) {
     // Manejar errores del servidor
     res.status(500).json({ message: err.message });
