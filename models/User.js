@@ -1,10 +1,16 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
+const CompletedExerciseSchema = new mongoose.Schema({
+  category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
+  completed: [{ type: mongoose.Schema.Types.ObjectId, ref: "Exercise" }]
+});
+
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ["user", "admin"], default: "user" },
+  completedExercises: { type: [CompletedExerciseSchema], default: [] }
 });
 
 UserSchema.pre("save", async function (next) {

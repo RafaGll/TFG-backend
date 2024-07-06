@@ -90,7 +90,7 @@ router.post(
       jwt.sign(
         payload,
         process.env.JWT_SECRET,
-        { expiresIn: "24h" }, // Cambia la expiración a 1 día
+        { expiresIn: "7d" }, // Cambia la expiración a 1 día
         (err, token) => {
           if (err) throw err;
           res.json({ token });

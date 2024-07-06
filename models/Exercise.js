@@ -1,11 +1,21 @@
 const mongoose = require('mongoose');
 
 const ExerciseSchema = new mongoose.Schema({
-  title: { type: String, required: true },
   problem: { type: String, required: true },
-  solution: { type: String, required: true },
-  level: { type: String, enum: ['basic', 'intermediate', 'advanced'], required: true },
+  level: { type: Number, enum: [1, 2], required: true }, // Cambiado a Number con valores 1 para fácil y 2 para difícil  
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+  images: { type: [String] },
+  answers: {
+    correct: { type: String, required: true },
+    incorrect: { type: [String], validate: [arrayLimit, '{PATH} exceeds the limit of 5'] }
+  },
+  explanation: { type: String },
+  order: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now }
 });
+
+function arrayLimit(val) {
+  return val.length <= 5;
+}
 
 module.exports = mongoose.model('Exercise', ExerciseSchema);
