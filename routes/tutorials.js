@@ -106,7 +106,7 @@ router.delete("/:id", auth, admin, getTutorial, async (req, res) => {
     const categoryId = res.tutorial.category;
     const currentOrder = res.tutorial.order;
 
-    await res.tutorial.remove();
+    await Tutorial.deleteOne({ _id: res.tutorial._id });
 
     // Actualizar el orden de los tutoriales restantes en la misma categoría
     await Tutorial.updateMany(
