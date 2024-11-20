@@ -21,6 +21,43 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Obtener ejercicios aleatorios de una dificultad específica
+router.get('/random', async (req, res) => {
+  console.log("Ruta random");
+  try {
+    const difficulty = req.query.difficulty; // 'hard' o 'easy'
+    const count = parseInt(req.query.count) || 10; // número de ejercicios a obtener, por defecto 10
+
+    // Mapear la dificultad a los valores de 'level' en el modelo
+    let level;
+    if (difficulty === 'hard') {
+      level = 2;
+    } else if (difficulty === 'easy') {
+      level = 1;
+    } else {
+      return res.status(400).json({ message: 'Dificultad inválida' });
+    }
+
+    // Usar agregación para obtener ejercicios aleatorios
+    const exercises = await Exercise.aggregate([
+      { $match: { level } },
+      { $sample: { size: count } },
+      { $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category'
+      }},
+      { $unwind: '$category' } // Desempaquetar el array de categorías
+    ]);
+
+    res.json(exercises);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 router.get("/total", async (req, res) => {
   try {
     const totalExercisesByCategory = await Exercise.aggregate([
@@ -91,6 +128,7 @@ router.get("/next/:categoryId", auth, async (req, res) => {
   }
 });
 
+
 // Crear un nuevo ejercicio
 router.post("/", async (req, res) => {
   const {
@@ -132,7 +170,8 @@ router.post("/", async (req, res) => {
   }
 });
 // Obtener un ejercicio por ID
-router.get("/:id", async (req, res) => {
+router.get("/:id([0-9a-fA-F]{24})", async (req, res) => {
+  console.log("Ruta id");
   try {
     const exercise = await Exercise.findById(req.params.id).populate(
       "category"
