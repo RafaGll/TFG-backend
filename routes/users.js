@@ -27,6 +27,19 @@ router.get('/progress', auth, async (req, res) => {
   }
 });
 
+router.post('/check-username', async (req, res) => {
+  const { username } = req.body;
+  try {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Nombre de usuario ya está en uso' });
+    }
+    res.json({ message: 'Nombre de usuario disponible' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+});
+
 // Actualizar los ejercicios completados del usuario autenticado
 router.patch('/complete-exercise', auth, async (req, res) => {
   const { categoryId, exerciseId } = req.body;
