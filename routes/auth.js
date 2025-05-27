@@ -2,105 +2,44 @@ const express = require("express");
 const { check, validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 const router = express.Router();
 
-// Registro de usuario
-router.post(
-  "/register",
-  [
-    check("username", "Username is required").not().isEmpty(),
-    check("password", "Password is required").isLength({ min: 6 }),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+// Inicializa el client de Google
+const CLIENT_ID = process.env.CLIENT_ID;  
+const client = new OAuth2Client(CLIENT_ID);
 
-    const { username, password } = req.body;
-    try {
-      let user = await User.findOne({ username });
-      if (user) {
-        return res.status(400).json({ msg: "User already exists" });
-      }
-
-      user = new User({
-        username,
-        password,
+// POST /auth/google
+router.post("/google", async (req, res) => {
+  const { token } = req.body;  // recibe { token: "<id_token de Google>" }
+  try {
+    // Verifica token con Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: CLIENT_ID
+    });
+    const { sub: googleId, email, name } = ticket.getPayload();
+    // Busca o crea usuario
+    let user = await User.findOne({ googleId });
+    if (!user) {
+      user = new User({ 
+        googleId,
+        email,
+        username: email,    // o name, según tu esquema
+        // rol por defecto
       });
-
       await user.save();
-
-      const payload = {
-        user: {
-          id: user.id,
-          role: user.role,
-        },
-      };
-
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: "24h" }, // Cambia la expiración a 1 día
-        (err, token) => {
-          if (err) throw err;
-          res.json({ token });
-        }
-      );
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("Server error");
     }
+
+    // Genera tu JWT de sesión
+    const payload = { user: { id: user.id, role: user.role } };
+    const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+    res.json({ token: jwtToken });
+  } catch (err) {
+    console.error("Google auth error:", err);
+    res.status(401).json({ msg: "Token de Google inválido" });
   }
-);
-
-// Inicio de sesión de usuario
-router.post(
-  "/login",
-  [
-    check("username", "Username is required").not().isEmpty(),
-    check("password", "Password is required").exists(),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { username, password } = req.body;
-    try {
-      const user = await User.findOne({ username });
-      if (!user) {
-        return res.status(400).json({ msg: "Invalid credentials" });
-      }
-
-      const isMatch = await user.matchPassword(password);
-      if (!isMatch) {
-        return res.status(400).json({ msg: "Invalid credentials" });
-      }
-
-      const payload = {
-        user: {
-          id: user.id,
-          role: user.role,
-        },
-      };
-
-      jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }, // Cambia la expiración a 1 día
-        (err, token) => {
-          if (err) throw err;
-          res.json({ token });
-        }
-      );
-    } catch (err) {
-      console.error(err.message);
-      res.status(500).send("Server error");
-    }
-  }
-);
+});
 
 module.exports = router;

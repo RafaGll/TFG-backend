@@ -7,12 +7,16 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+const FRONTEND_URL = process.env.FRONTEND_URL;
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true
+}))
 // Aumentar el límite de tamaño de la solicitud
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Configuración básica de CORS (permite todas las solicitudes desde cualquier origen)
-app.use(cors());
 
 // O puedes usar una configuración más avanzada de CORS
 // const corsOptions = {
@@ -22,6 +26,7 @@ app.use(cors());
 //   optionsSuccessStatus: 204
 // };
 // app.use(cors(corsOptions));
+
 
 app.use(express.json());
 
