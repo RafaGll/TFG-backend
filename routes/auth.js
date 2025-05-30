@@ -12,9 +12,8 @@ const client = new OAuth2Client(CLIENT_ID);
 
 // POST /auth/google
 router.post("/google", async (req, res) => {
-  const { token } = req.body;  // recibe { token: "<id_token de Google>" }
+  const { token } = req.body;
   try {
-    // Verifica token con Google
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: CLIENT_ID
@@ -23,16 +22,13 @@ router.post("/google", async (req, res) => {
     if (!payload) {
       return res.status(401).json({ msg: "Token de Google inválido" });
     }
-    const googleId = payload.sub;  // ID de usuario de Google
-    const email = payload.email;  // Email del usuario
-
-    // Busca o crea usuario
+    const googleId = payload.sub;
+    const email = payload.email;
+    // ... (resto igual)
     let user = await User.findOne({ googleId });
     if (!user) {
-      user = await User.create({ googleId, email});
+      user = await User.create({ googleId, email });
     }
-
-    // Genera tu JWT de sesión
     const jwtPayload = { user: { id: user._id, role: user.role } };
     const tokenJWT = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: "7d" });
     return res.json({ token: tokenJWT });
