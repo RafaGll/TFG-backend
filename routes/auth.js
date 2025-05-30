@@ -19,22 +19,23 @@ router.post("/google", async (req, res) => {
       idToken: token,
       audience: CLIENT_ID
     });
-    const { sub: googleId, email, name } = ticket.getPayload();
+    const payload = ticket.getPayload();
+    if (!payload) {
+      return res.status(401).json({ msg: "Token de Google inválido" });
+    }
+    const googleId = payload.sub;  // ID de usuario de Google
+    const email = payload.email;  // Email del usuario
+
     // Busca o crea usuario
     let user = await User.findOne({ googleId });
     if (!user) {
-      user = new User({ 
-        googleId,
-        email,
-        username: email,    // o name, según tu esquema
-        // rol por defecto
-      });
-      await user.save();
+      user = await User.create({ googleId, email});
     }
 
     // Genera tu JWT de sesión
-    const payload = { user: { id: user.id, role: user.role } };
-    const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+    // const payload = { user: { id: user.id, role: user.role } };
+    const jwtPayload = { user: { id: user._id, role: user.role } };
+    const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: "7d" });
     res.json({ token: jwtToken });
   } catch (err) {
     console.error("Google auth error:", err);

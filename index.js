@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: FRONTEND_URL, // Cambia esto por el dominio de tu frontend
   credentials: true
 }))
 // Aumentar el límite de tamaño de la solicitud
@@ -28,7 +28,6 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // app.use(cors(corsOptions));
 
 
-app.use(express.json());
 
 // Asegúrate de que la carpeta 'uploads' esté disponible para servir archivos estáticos
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
