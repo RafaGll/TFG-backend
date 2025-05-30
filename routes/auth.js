@@ -33,13 +33,12 @@ router.post("/google", async (req, res) => {
     }
 
     // Genera tu JWT de sesión
-    // const payload = { user: { id: user.id, role: user.role } };
     const jwtPayload = { user: { id: user._id, role: user.role } };
-    const jwtToken = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.json({ token: jwtToken });
+    const tokenJWT = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: "7d" });
+    return res.json({ token: tokenJWT });
   } catch (err) {
     console.error("Google auth error:", err);
-    res.status(401).json({ msg: "Token de Google inválido" });
+    return res.status(401).json({ msg: "Token de Google inválido" });
   }
 });
 
