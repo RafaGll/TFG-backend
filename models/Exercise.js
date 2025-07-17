@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const ExerciseSchema = new mongoose.Schema({
   problem: { type: String, required: true },
-  level: { type: Number, enum: [1, 2], required: true }, // Cambiado a Number con valores 1 para fácil y 2 para difícil  
+  level: { type: Number, enum: [1, 2], required: true }, 
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   images: { type: [String] },
   answers: {
